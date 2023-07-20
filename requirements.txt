@@ -18,6 +18,8 @@ pyttsx3==2.90
 mysql-connector-python==8.0.31
 thermalprinter==0.2.0
 Authlib==1.2.1
+redis==4.6.0
+python-dotenv==1.0.0
 # alembic==1.11.1
 
 

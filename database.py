@@ -1,9 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from dotenv import load_dotenv
+import os
 
-# SQLALCHEMY_DATABASE_URL = "sqlite:///./qmatic_dyb.db"
-SQLALCHEMY_DATABASE_URL = "mysql+mysqlconnector://root:password@localhost:3306/rba"
+load_dotenv()
+
+url=os.getenv("db_url")
+
+SQLALCHEMY_DATABASE_URL = url
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, pool_size=200, max_overflow=0
