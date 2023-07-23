@@ -11,7 +11,7 @@ algo=os.getenv("authjwt_decode_algorithms")
 
 class Settings(BaseModel):
     AUTHJWT_SECRET_KEY:str=AUTHJWT_SECRET_KEY
-    authjwt_denylist_enabled: bool = True
+    # authjwt_denylist_enabled: bool = True
     authjwt_denylist_token_checks: set = {"access","refresh"}
     authjwt_decode_algorithms: set = {algo}
     authjwt_access_token_expires: timedelta = timedelta(hours=15)

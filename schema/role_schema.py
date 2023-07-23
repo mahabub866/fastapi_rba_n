@@ -7,28 +7,32 @@ from datetime import timedelta
 
 class RoleModelCreate(BaseModel):
     name: str
-    super_admin: Optional[bool] = True
     active: Optional[bool] = True
-    user_management: Optional[str] = 'i'
-    tv_app_management: Optional[str] = 'i'
-    app_management: Optional[str] = 'i'
-    end_tv_app_user_management: Optional[str] = 'i'
+    user_management: Optional[str] = 'a'
+    tv_app_management: Optional[str] = 'a'
+    app_management: Optional[str] = 'a'
+    end_tv_app_user_management: Optional[str] = 'a'
 
     class Config:
         extra = "forbid"
 
 
-class RoleModelUpdate(BaseModel):
-    uuid: str
-    name: Optional[str]
-    active: Optional[bool]
-    user_management: Optional[str] = 'i'
-    tv_app_management: Optional[str] = 'i'
-    app_management: Optional[str] = 'i'
-    end_tv_app_user_management: Optional[str] = 'i'
-    info1: Optional[str]
-    info2: Optional[str]
-    extra_info: Optional[dict]
+class RoleUpdate(BaseModel):
+    uid: str
+    name: str
+    active: bool
+    user_management: str 
+    tv_app_management: str 
+    app_management: str 
+    end_tv_app_user_management: str 
+
+    class Config:
+        extra = "forbid"
+
+class RoleStatusUpdate(BaseModel):
+    uid: str
+    active:bool
+   
 
     class Config:
         extra = "forbid"

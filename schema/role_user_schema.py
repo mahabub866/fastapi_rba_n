@@ -25,3 +25,21 @@ class LoginModel(BaseModel):
     class Config:
         extra = "forbid"
 
+
+class RoleUserUpdate(BaseModel):
+    uid: str
+    name: str
+    active: bool
+    role:str
+    email:str
+    mobile_number:str
+
+    class Config:
+        extra = "forbid"
+
+class RoleUserStatusUpdate(BaseModel):
+    uid: str
+    active:bool
+
+    class Config:
+        extra = "forbid"
