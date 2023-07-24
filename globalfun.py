@@ -70,6 +70,10 @@ def authfuncjti(data,db):
         print("Invalid token.")
     except jwt.DecodeError:
         print("Not a valid JWT.")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="JWT token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid JWT token")
 
 def decode_token(data,db):
     # print(data,db,'fffffffffffffffffffffffffffffffffffffffffffffffffff')
@@ -126,3 +130,7 @@ def decode_token(data,db):
         print("Invalid token.")
     except jwt.DecodeError:
         print("Not a valid JWT.")
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="JWT token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid JWT token")
