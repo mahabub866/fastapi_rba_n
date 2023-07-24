@@ -12,7 +12,7 @@ from database import get_db
 from models import RoleModel,RoleUserModel,BlockModel
 import uuid
 from schema import RoleModelCreate,RoleStatusUpdate,RoleUpdate
-from globalfun import decode_token,authfuncjti,flatten_list_of_dicts
+from globalfun import flatten_list_of_dicts
 from fastapi_jwt_auth import AuthJWT
 
 uId=str(uuid.uuid4())
@@ -202,16 +202,10 @@ async def create_user( request:RoleStatusUpdate,db: Session = Depends(get_db),Au
                         }
 
                     logs = []
-                    mak=flatten_list_of_dicts(user.logs)
-                    logs.append(mak)
+                    logs.append(user.logs)
                     logs.append(new_logs)
-                    one_array_logs=[]
-                    for item in logs:
-                        if isinstance(item, list):
-                            one_array_logs.extend(item)
-                        elif isinstance(item, dict):
-                            one_array_logs.append(item)
-                    db.query(RoleModel).filter(RoleModel.uid==request.uid).update({'active': request.active,'logs':one_array_logs})
+                    logs_data=flatten_list_of_dicts(logs)
+                    db.query(RoleModel).filter(RoleModel.uid==request.uid).update({'active': request.active,'logs':logs_data})
                     db.commit()
                     return {'status_code': status.HTTP_201_CREATED, 'success': True,"message":"Role Status is Update" }
                 
@@ -278,16 +272,10 @@ async def create_user( request:RoleUpdate,db: Session = Depends(get_db),Authoriz
                     "app_management": request.app_management,
                     }
                     logs = []
-                    mak=flatten_list_of_dicts(user.logs)
-                    logs.append(mak)
+                    logs.append(user.logs)
                     logs.append(new_logs)
-                    one_array_logs=[]
-                    for item in logs:
-                        if isinstance(item, list):
-                            one_array_logs.extend(item)
-                        elif isinstance(item, dict):
-                            one_array_logs.append(item)
-                    db.query(RoleModel).filter(RoleModel.uid==request.uid).update({'active': request.active,'name':request.name,'role':roles,'logs':one_array_logs})
+                    logs_data=flatten_list_of_dicts(logs)
+                    db.query(RoleModel).filter(RoleModel.uid==request.uid).update({'active': request.active,'name':request.name,'role':roles,'logs':logs_data})
                     db.commit()
                     return {'status_code': status.HTTP_201_CREATED, 'success': True,"message":"Role is Update" }
                 

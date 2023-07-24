@@ -1,3 +1,3 @@
 from .role_schema import RoleModelCreate,RoleStatusUpdate,RoleUpdate
 
-from .role_user_schema import RoleUserCreate,LoginModel,RoleUserUpdate,RoleUserStatusUpdate
+from .role_user_schema import RoleUserCreate,LoginModel,RoleUserUpdate,RoleUserStatusUpdate,AdminUserChangePasswordSchema,AdminSelfUserChangePasswordSchema

@@ -43,3 +43,20 @@ class RoleUserStatusUpdate(BaseModel):
 
     class Config:
         extra = "forbid"
+
+
+class AdminSelfUserChangePasswordSchema(BaseModel):
+    uid: str
+    new_password: str
+    old_password: str
+
+    class Config:
+        extra = "forbid"
+
+
+class AdminUserChangePasswordSchema(BaseModel):
+    uid: str
+    new_password: str
+
+    class Config:
+        extra = "forbid"

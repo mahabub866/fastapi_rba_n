@@ -10,8 +10,8 @@ from fastapi.encoders import jsonable_encoder
 from database import get_db
 from models import RoleUserModel,RoleModel,BlockModel
 import uuid
-from schema import RoleUserCreate,LoginModel,RoleUserStatusUpdate,RoleUserUpdate
-from globalfun import decode_token,authfuncjti,flatten_list_of_dicts
+from schema import RoleUserCreate,LoginModel,RoleUserStatusUpdate,RoleUserUpdate,AdminSelfUserChangePasswordSchema,AdminUserChangePasswordSchema
+from globalfun import decode_token,flatten_list_of_dicts
 from fastapi_jwt_auth import AuthJWT
 from sqlalchemy.orm import Session, load_only
 
@@ -30,7 +30,7 @@ async def create_user(db: Session = Depends(get_db)):
     if is_exixt:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super Admin User is Already Created")
     log={
-         "message":"User Created",
+         "message":"Super User Created",
         "create_at":str(create_at),
         "admin":"11223344"
     }
@@ -62,7 +62,8 @@ async def login(request:LoginModel,db: Session = Depends(get_db),Authorize:AuthJ
         data={}
         if db_user.token is None:
             payload=decode_token(access_token,db)
-            print(payload,'payloaddddd')
+            # print(payload,'payloaddddd')
+           
             db.query(RoleUserModel).filter(and_(RoleUserModel.user_id==request.user_id,RoleUserModel.user_id==db_user.user_id)).update({"token":access_token,"jti":payload['jti']})
             db.commit()
             token_value =db.query(RoleUserModel).filter(and_(RoleUserModel.token!=None,RoleUserModel.user_id==request.user_id)).first()
@@ -72,11 +73,19 @@ async def login(request:LoginModel,db: Session = Depends(get_db),Authorize:AuthJ
         
         else:
             payloads=decode_token(db_user.token,db)
-            print(payloads,'payloads')
-            block_token=BlockModel(block_id=str(uuid.uuid4()),token=db_user.token,user_id=payloads['sub'],jti=payloads['jti'],create_at=datetime.utcnow())
-            db.add(block_token)
-            db.commit()
-            db.refresh(block_token)
+            # print(payloads,'payloads')
+            if payloads is None:
+                payload=decode_token(access_token,db)
+                db.query(RoleUserModel).filter(RoleUserModel.user_id==request.user_id).update({"token":access_token,"jti":payload['jti']})
+                db.commit()
+                token_value =db.query(RoleUserModel).filter(and_(RoleUserModel.token!=None,RoleUserModel.user_id==request.user_id)).first()
+                role=db.query(RoleModel).filter(RoleModel.uid==token_value.role_id).first()
+                data = {"access_token": token_value.token,"role":role.role,"name":db_user.name,"user_id":db_user.user_id,"refresh_token":refresh_token}
+            else:
+                block_token=BlockModel(block_id=str(uuid.uuid4()),token=db_user.token,user_id=payloads['sub'],jti=payloads['jti'],create_at=datetime.utcnow())
+                db.add(block_token)
+                db.commit()
+                db.refresh(block_token)
            
            
             maks=db.query(RoleUserModel).filter(and_(RoleUserModel.token!=None,RoleUserModel.user_id==request.user_id)).first()
@@ -142,7 +151,7 @@ async def create_user(request: RoleUserCreate, db: Session = Depends(get_db),Aut
                     "admin":str(user_id)
                 }
 
-                new_role = RoleUserModel(uid=uId,name=request.name,email=request.email,user_id=request.user_id,password=generate_password_hash(request.password),super_admin= True,mobile_number=request.mobile_number,role_id=request.role,active=request.active,logs=log,create_at= create_at)
+                new_role = RoleUserModel(uid=uId,name=request.name,email=request.email,user_id=request.user_id,password=generate_password_hash(request.password),super_admin= False,mobile_number=request.mobile_number,role_id=request.role,active=request.active,logs=log,create_at= create_at)
                 db.add(new_role)
                 db.commit()
                 db.refresh(new_role)
@@ -247,16 +256,11 @@ async def create_user( request:RoleUserStatusUpdate,db: Session = Depends(get_db
                         }
 
                     logs = []
-                    mak=flatten_list_of_dicts(user.logs)
-                    logs.append(mak)
+                    logs.append(user.logs)
                     logs.append(new_logs)
-                    one_array_logs=[]
-                    for item in logs:
-                        if isinstance(item, list):
-                            one_array_logs.extend(item)
-                        elif isinstance(item, dict):
-                            one_array_logs.append(item)
-                    db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).update({'active': request.active,'logs':one_array_logs})
+                    logs_data=flatten_list_of_dicts(logs)
+                   
+                    db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).update({'active': request.active,'logs':logs_data})
                     db.commit()
                     return {'status_code': status.HTTP_201_CREATED, 'success': True,"message":"User Status is Update" }
                 
@@ -305,29 +309,160 @@ async def create_user( request:RoleUserUpdate,db: Session = Depends(get_db),Auth
                 if user:
                     if db.query(RoleUserModel).filter(and_(RoleUserModel.uid==request.uid,RoleUserModel.super_admin==True)).first():
                         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super Admin is not editable")
-                    
-                    # if db.query(RoleUserModel).filter(RoleUserModel.email ==request.email).first():
-                    #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is Already exist")
-                    # if db.query(RoleUserModel).filter(RoleUserModel.mobile_number ==request.mobile_number).first():
-                    #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mobile Number is Already exist")
                     new_logs={
                         "admin": str(user_id),
                         "message": "user updated",
                         "create_at": str(create_at)
                     }
                     logs = []
-                    mak=flatten_list_of_dicts(user.logs)
-                    logs.append(mak)
+                    logs.append(user.logs)
                     logs.append(new_logs)
-                    one_array_logs=[]
-                    for item in logs:
-                        if isinstance(item, list):
-                            one_array_logs.extend(item)
-                        elif isinstance(item, dict):
-                            one_array_logs.append(item)
-                    db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).update({'active': request.active,'name':request.name,'mobile_number':request.mobile_number,'email':request.email,'logs':one_array_logs})
+                    logs_data=flatten_list_of_dicts(logs)
+                    db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).update({'active': request.active,'name':request.name,'mobile_number':request.mobile_number,'email':request.email,'logs':logs_data})
                     db.commit()
                     return {'status_code': status.HTTP_201_CREATED, 'success': True,"message":"User Status is Update" }
+                
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User is not active")
+            
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="This Role is not permitted for you")
+    raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Role is not active")
+    
+@role_user_router.put('/self/chnage-password', status_code=status.HTTP_201_CREATED)
+async def create_user( request:AdminSelfUserChangePasswordSchema,db: Session = Depends(get_db),Authorize:AuthJWT=Depends()):
+    mak=Authorize.get_raw_jwt()
+    try:
+        Authorize.jwt_required()
+       
+        block_token=db.query(BlockModel).filter(BlockModel.jti==mak['jti']).first()
+        if block_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is already block")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
+    user_id=Authorize.get_jwt_subject()
+
+    data=  db.query(RoleUserModel).filter(and_(RoleUserModel.user_id ==user_id,RoleUserModel.jti==mak['jti'])).first()
+    
+    if data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found")
+    
+    data2=  db.query(RoleModel).filter(RoleModel.uid ==data.role_id).first()
+
+    if data2 is None:
+        raise HTTPException(
+           status_code=status.HTTP_404_NOT_FOUND, detail="Role Not Found")
+    if data2.active==True:
+        if data2.role['user_management']=='a':
+            if data.active==True:
+                create_at=datetime.now()
+                user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
+               
+                if user:
+                    # if db.query(RoleUserModel).filter(and_(RoleUserModel.uid==request.uid,RoleUserModel.super_admin==True)).first():
+                    #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super Admin is not editable")
+                    new_logs={
+                        "admin": str(user_id),
+                        "message": "password changed",
+                        "create_at": str(create_at)
+                    }
+                    logs = []
+                    logs.append(user.logs)
+                    logs.append(new_logs)
+                    logs_data=flatten_list_of_dicts(logs)
+                    old_password=check_password_hash(data.password,request.old_password)
+                    if  (data is not None) and (data.active) :
+        
+                        check=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
+
+                        if check is None:
+                            raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED, detail="id Does Not Match")
+
+                        
+                        if old_password ==False:
+                            raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED, detail="Old password Does Not Match")
+
+
+                        db.query(RoleUserModel).filter(RoleUserModel.uid == request.uid).update({'password': generate_password_hash(request.new_password) ,"logs":logs_data})
+                        db.commit()
+                        return {'status_code': status.HTTP_201_CREATED, 'success': True,"message":"Password Update Succesfully" }
+                    
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is not active")
+                
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User is not active")
+            
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="This Role is not permitted for you")
+    raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Role is not active")
+    
+@role_user_router.put('/user/chnage-password', status_code=status.HTTP_201_CREATED)
+async def create_user( request:AdminUserChangePasswordSchema,db: Session = Depends(get_db),Authorize:AuthJWT=Depends()):
+    mak=Authorize.get_raw_jwt()
+    try:
+        Authorize.jwt_required()
+       
+        block_token=db.query(BlockModel).filter(BlockModel.jti==mak['jti']).first()
+        if block_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is already block")
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
+    user_id=Authorize.get_jwt_subject()
+
+    data=  db.query(RoleUserModel).filter(and_(RoleUserModel.user_id ==user_id,RoleUserModel.jti==mak['jti'])).first()
+    
+    if data is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found")
+    
+    data2=  db.query(RoleModel).filter(RoleModel.uid ==data.role_id).first()
+
+    if data2 is None:
+        raise HTTPException(
+           status_code=status.HTTP_404_NOT_FOUND, detail="Role Not Found")
+    if data2.active==True:
+        if data2.role['user_management']=='a':
+            if data.active==True:
+                create_at=datetime.now()
+                user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
+               
+                if user:
+                    if db.query(RoleUserModel).filter(and_(RoleUserModel.uid==request.uid,RoleUserModel.super_admin==True)).first():
+                        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super Admin is not editable")
+                    new_logs={
+                        "admin": str(user_id),
+                        "message": "user password changed",
+                        "create_at": str(create_at)
+                    }
+                    logs = []
+                    logs.append(user.logs)
+                    logs.append(new_logs)
+                    logs_data=flatten_list_of_dicts(logs)
+                    
+                    if  (data is not None) and (data.active) :
+        
+                        check=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
+
+                        if check is None:
+                            raise HTTPException(
+                            status_code=status.HTTP_401_UNAUTHORIZED, detail="id Does Not Match")
+                        
+                        db.query(RoleUserModel).filter(RoleUserModel.uid == request.uid).update({'password': generate_password_hash(request.new_password) ,"logs":logs_data})
+                        db.commit()
+                        return {'status_code': status.HTTP_201_CREATED, 'success': True,"message":"Password Update Succesfully" }
+                    
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is not active")
                 
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND, detail="User Not Found")

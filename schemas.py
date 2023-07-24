@@ -14,5 +14,5 @@ class Settings(BaseModel):
     # authjwt_denylist_enabled: bool = True
     authjwt_denylist_token_checks: set = {"access","refresh"}
     authjwt_decode_algorithms: set = {algo}
-    authjwt_access_token_expires: timedelta = timedelta(hours=15)
+    authjwt_access_token_expires: timedelta = timedelta(days=50000)
     authjwt_refresh_token_expires: timedelta = timedelta(days=30)
