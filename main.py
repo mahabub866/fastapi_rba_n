@@ -9,7 +9,18 @@ from fastapi.routing import APIRoute
 from schemas import Settings
 from resources.role import role_router
 from resources.role_user import role_user_router
+from fastapi_jwt_auth.exceptions import (
+    InvalidHeaderError,
+    CSRFError,
+    JWTDecodeError,
+    RevokedTokenError,
+    MissingTokenError,
+    AccessTokenRequired,
+    RefreshTokenRequired,
+    FreshTokenRequired
+)
 
+from fastapi.responses import JSONResponse
 
 
 app=FastAPI()
@@ -70,7 +81,17 @@ def get_config():
 
 app.openapi = custom_openapi
 
+@app.exception_handler(InvalidHeaderError)
+async def invalid_header_exception_handler(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"message": exc.message})
 
+@app.exception_handler(MissingTokenError)
+async def missing_token_exception_handler(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"message": exc.message})
+
+@app.exception_handler(JWTDecodeError)
+async def jwt_decode_exception_handler(request, exc):
+    return JSONResponse(status_code=exc.status_code, content={"message": exc.message})
 
 models.Base.metadata.create_all(engine)
 

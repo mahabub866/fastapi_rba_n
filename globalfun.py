@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 import jwt
 from fastapi_jwt_auth.exceptions import JWTDecodeError
-from models import BlockModel,RoleUserModel
+from models import BlockModel,RoleUserModel,RoleModel
 from fastapi_jwt_auth import AuthJWT
 from sqlalchemy import asc,or_,desc,and_
 
@@ -26,56 +26,8 @@ def flatten_list_of_dicts(logs):
             one_array_logs.append(item)
     return one_array_logs
 
-def authfuncjti(data,db):
-    # print(data,db,'ddddddddddddddddddddddd')
-    try:
-        # Your code for decoding the token
-        
-        block_token=db.query(BlockModel).filter(BlockModel.jti==data).first()
-        # print(block_token.jti,'dddddddddddddddddd')
-        if block_token is not None:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is already block")
-        # if block_token is not None:
-        #     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is already block")
-            
-        # main=db.query(RoleUserModel).filter(RoleUserModel.user_id==payload["sub"]).first()
-        # print(main,'ddddddddddddddd')
-        # user_main=db.query(RoleUserModel).filter(RoleUserModel.user_id==payload["sub"]).first()
-        # if main is None :
-        #     decode_value_user=jwt.decode(data,AUTHJWT_SECRET_KEY,algorithms=[algo])
-        #     if decode_value_user['jti']!=payload["jti"]:
-        #         return 'Token Block'
-        # if user_main :
-        #     decode_value=jwt.decode(data,AUTHJWT_SECRET_KEY,algorithms=[algo])
-        #     if decode_value['jti']!=payload["jti"]:
-        #         return 'Token Block'
-        # if main  is None and user_main is None:
-        #     return 'Token Block'
-        # if main is None and user_main:
-        #     decode_value_user=decode_token(user_main.token)
-        #     if decode_value_user['jti']!=payload["jti"]:
-        #         return 'Token Block'
-        # if main and user_main is None:
-        #     decode_value=decode_token(main.token)
-        #     if decode_value['jti']!=payload["jti"]:
-        #         return 'Token Block'
-       
-        return block_token
-    except JWTDecodeError as e:
-         # Handle JWTDecodeError (e.g., token expired)
-        return {"error": "Token has expired."}, 401
-    except jwt.ExpiredSignatureError:
-        print("Token has expired.")
-    except jwt.InvalidTokenError:
-        print("Invalid token.")
-    except jwt.DecodeError:
-        print("Not a valid JWT.")
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="JWT token has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid JWT token")
 
-def decode_token(data,db):
+def decode_token(data,db,):
     # print(data,'fffffffffffffffffffffffffffffffffffffffffffffffffff')
     try:
         # Your code for decoding the token
@@ -88,7 +40,7 @@ def decode_token(data,db):
             # print(delete)
             db.delete(delete)
             db.commit()
-            denylist = set()
+            denylist(payload['jti'])
             jti = payload['jti']
             if jti in denylist:
                 return True
@@ -148,3 +100,36 @@ def decode_token(data,db):
         print("JWT token has expired")
         return None
         # raise HTTPException(status_code=401, detail="Invalid JWT token")
+
+def validationcheck(user_id,db,jti):
+    try:
+        block_token=db.query(BlockModel).filter(BlockModel.jti==jti).first()
+        if block_token:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is already block")
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is Block")
+    data=  db.query(RoleUserModel).filter(and_(RoleUserModel.user_id ==user_id,RoleUserModel.jti==jti)).first()
+    
+    if data is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="This token is not available")
+    
+    data2=  db.query(RoleModel).filter(RoleModel.uid ==data.role_id).first()
+
+    if data2 is None:
+        raise HTTPException(
+           status_code=status.HTTP_404_NOT_FOUND, detail="Role Not Found")
+    if data2.active==True:
+        if data2.role['user_management']=='a':
+            if data.active==True:
+
+                return True
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="User is not active")
+            
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="This Role is not permitted for you")
+    raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Role is not active")

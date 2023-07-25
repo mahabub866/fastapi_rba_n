@@ -11,7 +11,7 @@ from database import get_db
 from models import RoleUserModel,RoleModel,BlockModel
 import uuid
 from schema import RoleUserCreate,LoginModel,RoleUserStatusUpdate,RoleUserUpdate,AdminSelfUserChangePasswordSchema,AdminUserChangePasswordSchema
-from globalfun import decode_token,flatten_list_of_dicts
+from globalfun import decode_token,flatten_list_of_dicts,validationcheck
 from fastapi_jwt_auth import AuthJWT
 from sqlalchemy.orm import Session, load_only
 
@@ -568,3 +568,37 @@ async def create_user( db: Session = Depends(get_db),Authorize:AuthJWT=Depends()
 
 
 
+@role_user_router.post('/create/check', status_code=status.HTTP_201_CREATED)
+async def create_user(request: RoleUserCreate, db: Session = Depends(get_db),Authorize:AuthJWT=Depends()):
+    mak=Authorize.get_raw_jwt()
+    Authorize.jwt_required()
+    user_id=Authorize.get_jwt_subject()
+    valid=validationcheck(user_id, db,mak['jti'])
+    if valid==True:
+        create_at=datetime.now()
+        is_exixt_id=  db.query(RoleUserModel).filter(RoleUserModel.user_id ==request.user_id).first()
+        is_exixt_email=  db.query(RoleUserModel).filter(RoleUserModel.email ==request.email).first()
+        is_exixt_mobile=  db.query(RoleUserModel).filter(RoleUserModel.mobile_number ==request.mobile_number).first()
+    
+        if is_exixt_id:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User Id Already exist")
+        if is_exixt_email:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email Already exist")
+        if is_exixt_mobile:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mobile Number Already exist")
+        
+        log={
+            "message":"New User Created",
+            "create_at":str(create_at),
+            "admin":str(user_id)
+        }
+
+        new_role = RoleUserModel(uid=uId,name=request.name,email=request.email,user_id=request.user_id,password=generate_password_hash(request.password),super_admin= False,mobile_number=request.mobile_number,role_id=request.role,active=request.active,logs=log,create_at= create_at)
+        db.add(new_role)
+        db.commit()
+        db.refresh(new_role)
+        return {'status_code': status.HTTP_201_CREATED, 'success': True, 'message': "User Create Succesfully"}
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Something happened")
+        
