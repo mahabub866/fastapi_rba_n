@@ -4,9 +4,14 @@ from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
 
+from fastapi import status, HTTPException
+
 load_dotenv()
 
 url=os.getenv("db_url")
+
+if url is None:
+    raise HTTPException("DataBase url is not store .env file")
 
 SQLALCHEMY_DATABASE_URL = url
 

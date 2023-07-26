@@ -52,7 +52,7 @@ async def login(request:LoginModel,db: Session = Depends(get_db),Authorize:AuthJ
     if db_role is None:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Invalid Role Id")
 
-    
+
     if db_user and check_password_hash(db_user.password,request.password):
         access_token=Authorize.create_access_token(subject=request.user_id)
         refresh_token=Authorize.create_refresh_token(subject=request.user_id)
@@ -242,8 +242,7 @@ async def create_user( request:AdminSelfUserChangePasswordSchema,db: Session = D
         user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
         
         if user:
-            # if db.query(RoleUserModel).filter(and_(RoleUserModel.uid==request.uid,RoleUserModel.super_admin==True)).first():
-            #     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Super Admin is not editable")
+            
             new_logs={
                 "admin": str(user_id),
                 "message": "password changed",
@@ -260,7 +259,7 @@ async def create_user( request:AdminSelfUserChangePasswordSchema,db: Session = D
 
                 if check is None:
                     raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED, detail="id Does Not Match")
+                    status_code=status.HTTP_401_UNAUTHORIZED, detail="id does not match")
 
                 if old_password ==False:
                     raise HTTPException(
@@ -350,43 +349,17 @@ async def create_user(delete_id:str,db: Session = Depends(get_db),Authorize:Auth
 @role_user_router.get('/role-helper', status_code=status.HTTP_200_OK)
 async def create_user( db: Session = Depends(get_db),Authorize:AuthJWT=Depends()):
     mak=Authorize.get_raw_jwt()
-    try:
-        Authorize.jwt_required()
-       
-        block_token=db.query(BlockModel).filter(BlockModel.jti==mak['jti']).first()
-        if block_token:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is already block")
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
+    Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-
-    data=  db.query(RoleUserModel).filter(and_(RoleUserModel.user_id ==user_id,RoleUserModel.jti==mak['jti'])).first()
-    
-    if data is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid Token")
-    
-    data2=  db.query(RoleModel).filter(RoleModel.uid ==data.role_id).first()
-
-    if data2 is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Role Not Found")
-    if data2.active==True:
-        if data2.role['user_management']=='a':
-            if data.active==True:
-                data=db.query(RoleUserModel).options(load_only(*['name',"uid"])).all()
-                data=db.query(RoleUserModel).all()
-                result = [{"uid": item.uid, "name": item.name} for item in data]
-                
-                return {'status_code': status.HTTP_201_CREATED, 'success': True, 'data': result}
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="User is not active")
-            
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="This Role is not permitted for you")
+    valid=validationcheck(user_id, db,mak['jti'])
+    if valid==True:
+        data=db.query(RoleUserModel).options(load_only(*['name',"uid"])).all()
+        data=db.query(RoleUserModel).all()
+        result = [{"uid": item.uid, "name": item.name} for item in data]
+        
+        return {'status_code': status.HTTP_201_CREATED, 'success': True, 'data': result}
     raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Role is not active")
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Something happened")
 
 
 
