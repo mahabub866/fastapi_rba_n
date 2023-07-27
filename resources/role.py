@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, status, HTTPException
 
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, asc
-from globalfun import validationcheck
+from globalfun import validation_user_management
 from fastapi.encoders import jsonable_encoder
 from database import get_db
 from models import RoleModel,RoleUserModel,BlockModel
@@ -54,7 +54,7 @@ async def create_user(request: RoleModelCreate, db: Session = Depends(get_db),Au
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         is_exixt=  db.query(RoleModel).filter(RoleModel.name ==request.name).first()
@@ -89,7 +89,7 @@ async def create_user( db: Session = Depends(get_db),Authorize:AuthJWT=Depends()
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
                 # data=db.query(RoleUserModel).options(load_only(*['name','user_id',"uid",'id','email','mobile_number','role_id','super_admin','active',"logs","create_at"])).all()
         data=db.query(RoleModel).all()
@@ -105,7 +105,7 @@ async def create_user( request:RoleStatusUpdate,db: Session = Depends(get_db),Au
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         user=db.query(RoleModel).filter(RoleModel.uid==request.uid).first()
@@ -145,7 +145,7 @@ async def create_user( request:RoleUpdate,db: Session = Depends(get_db),Authoriz
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         user=db.query(RoleModel).filter(RoleModel.uid==request.uid).first()
@@ -184,7 +184,7 @@ async def create_user(delete_id:str,db: Session = Depends(get_db),Authorize:Auth
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         user=db.query(RoleModel).filter(RoleModel.uid==delete_id).first()
         

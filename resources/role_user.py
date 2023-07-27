@@ -11,7 +11,7 @@ from database import get_db
 from models import RoleUserModel,RoleModel,BlockModel
 import uuid
 from schema import RoleUserCreate,LoginModel,RoleUserStatusUpdate,RoleUserUpdate,AdminSelfUserChangePasswordSchema,AdminUserChangePasswordSchema
-from globalfun import decode_token,flatten_list_of_dicts,validationcheck
+from globalfun import decode_token,flatten_list_of_dicts,validation_user_management
 from fastapi_jwt_auth import AuthJWT
 from sqlalchemy.orm import Session, load_only
 
@@ -109,7 +109,7 @@ async def create_user(request: RoleUserCreate, db: Session = Depends(get_db),Aut
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         is_exixt_id=  db.query(RoleUserModel).filter(RoleUserModel.user_id ==request.user_id).first()
@@ -146,7 +146,7 @@ async def create_user( db: Session = Depends(get_db),Authorize:AuthJWT=Depends()
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         # data=db.query(RoleUserModel).options(load_only(*['name','user_id',"uid",'id','email','mobile_number','role_id','super_admin','active',"logs","create_at"])).all()
         data=db.query(RoleUserModel).all()
@@ -163,7 +163,7 @@ async def create_user( request:RoleUserStatusUpdate,db: Session = Depends(get_db
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
@@ -205,7 +205,7 @@ async def create_user( request:RoleUserUpdate,db: Session = Depends(get_db),Auth
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
@@ -236,7 +236,7 @@ async def create_user( request:AdminSelfUserChangePasswordSchema,db: Session = D
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
@@ -284,7 +284,7 @@ async def create_user( request:AdminUserChangePasswordSchema,db: Session = Depen
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         create_at=datetime.now()
         user=db.query(RoleUserModel).filter(RoleUserModel.uid==request.uid).first()
@@ -327,7 +327,7 @@ async def create_user(delete_id:str,db: Session = Depends(get_db),Authorize:Auth
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         user=db.query(RoleUserModel).filter(RoleUserModel.user_id==delete_id).first()
         if user:
@@ -351,7 +351,7 @@ async def create_user( db: Session = Depends(get_db),Authorize:AuthJWT=Depends()
     mak=Authorize.get_raw_jwt()
     Authorize.jwt_required()
     user_id=Authorize.get_jwt_subject()
-    valid=validationcheck(user_id, db,mak['jti'])
+    valid=validation_user_management(user_id, db,mak['jti'])
     if valid==True:
         data=db.query(RoleUserModel).options(load_only(*['name',"uid"])).all()
         data=db.query(RoleUserModel).all()

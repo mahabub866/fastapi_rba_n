@@ -101,7 +101,7 @@ def decode_token(data,db,):
         return None
         # raise HTTPException(status_code=401, detail="Invalid JWT token")
 
-def validationcheck(user_id,db,jti):
+def validation_user_management(user_id,db,jti):
     try:
         block_token=db.query(BlockModel).filter(BlockModel.jti==jti).first()
         if block_token:
